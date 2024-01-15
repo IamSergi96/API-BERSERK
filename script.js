@@ -1,23 +1,42 @@
+//librerias
+require("dotenv").config();
 const express = require("express");
+const logger = require("morgan");
+const cors = require("cors");
+const mongoSanitize = require("express-mongo-sanitize");
+//mis componentes
 const HTTPSTATUSCODE = require("./utils/httpstatuscode");
 const characterRouter = require("./src/api/routes/personajeRoutes");
+const userRouter = require("./src/api/routes/userRoutes")
 const { connectMongo } = require("./utils/database");
+
 const app = express();
 connectMongo();
 
-// Middleware para analizar el cuerpo de la solicitud como JSON
-app.use(express.json());
-
-// Headers para Postman y otros clientes
-app.use((req, res, next) => {
+//mongoSanitze es una libreria que ayuda contra la inyeccion de codigo malicioso formato mongo
+app.use(mongoSanitize()); 
+app.use((req,res,next)=>{
     res.header('Access-Control-Allow-Methods', 'GET,PATCH,POST,DELETE');
     res.header('Access-Control-Allow-Credentials', true);
     res.header('Access-Control-Allow-Headers', 'Content-Type');
-    next();
+    next()
 });
 
-// Rutas
+//CORS: Cross-Origin Resource Sharing: es un mecanismo de seguridad para restringir las solicitudes HTTP entre diferentes dominios
+app.use(cors({
+    origin: ["http://localhost:3000", "http://localhost:4200"],
+    credentials: true
+}));
+
+// Middleware para analizar el cuerpo de la solicitud como JSON
+app.use(express.json());
+app.use(express.urlencoded({extended:true}));
+app.use(logger("dev"));
+app.set("secretKey", "nodeRestApi");
+
+/* RUTAS*/
 app.use("/api/characters", characterRouter);
+app.use("/api/users", userRouter);
 
 // Ruta de bienvenida
 app.get("/", (req, res) => {
